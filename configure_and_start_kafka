@@ -1,0 +1,65 @@
+#map singularity env to kafka env
+BROKER_ID="${INSTANCE_NO}"
+ADVERTISED_HOSTNAME="${TASK_HOST}"
+ADVERTISED_PORT="${PORT0}"
+
+if [ -z "$BROKER_ID" ]; then
+  echo "Missing environment variable BROKER_ID"
+  exit 1
+fi
+
+if [ -z "$ADVERTISED_HOSTNAME" ]; then
+  echo "Missing environment variable ADVERTISED_HOSTNAME"
+  exit 1
+fi
+
+if [ -z "$ADVERTISED_PORT" ]; then
+  echo "Missing environment variable ADVERTISED_PORT"
+  exit 1
+fi
+
+if [ -z "$ZOOKEEPER_CONNECT" ]; then
+  echo "Missing environment variable ZOOKEEPER_CONNECT"
+  exit 1
+fi
+
+if [ -z "$LOG_DIR" ]; then
+  echo "Missing environment variable DATA_DIR"
+  exit 1
+fi
+
+if [ -z "$KAFKA_HOME" ]; then
+  echo "Missing environment variable KAFKA_HOME"
+  exit 1
+fi
+	
+if [ -z "$GRAPHITE_HOST" ]; then
+	>&2 echo "Missing environment variable GRAPHITE_HOST" 
+fi
+
+if [ -z "$GRAPHITE_PORT" ]; then
+  >&2 echo "Missing environment variable GRAPHITE_HOST" 
+fi
+
+if [ -z "$GRAPHITE_GROUP" ]; then
+	>&2 echo "Missing environment variable GRAPHITE_GROUP" 
+fi
+
+CONFIG_FILE=$KAFKA_HOME/config/server.properties
+sed -i "s#broker.id=.*#broker.id=${BROKER_ID}#g" $CONFIG_FILE
+sed -i "s#advertised.host.name=.*#advertised.host.name=${ADVERTISED_HOSTNAME}#g" $CONFIG_FILE
+sed -i "s#advertised.port=.*#advertised.port=${ADVERTISED_PORT}#g" $CONFIG_FILE
+sed -i "s#log.dirs=.*#log.dirs=${LOG_DIR}#g" $CONFIG_FILE
+sed -i "s#zookeeper.connect=.*#zookeeper.connect=${ZOOKEEPER_CONNECT}#g" $CONFIG_FILE
+
+if [ ! -z "$GRAPHITE_HOST" ] && [ ! -z "$GRAPHITE_PORT" ] && [ ! -z "$GRAPHITE_GROUP" ]; then
+	sed -i "s#kafka.metrics.reporters=.*#kafka.metrics.reporters=com.criteo.kafka.KafkaGraphiteMetricsReporter#g" $CONFIG_FILE
+	sed -i "s#kafka.graphite.metrics.reporter.enabled=.*#kafka.graphite.metrics.reporter.enabled=true#g" $CONFIG_FILE
+	sed -i "s#kafka.graphite.metrics.host=.*#kafka.graphite.metrics.host=$GRAPHITE_HOST#g" $CONFIG_FILE
+	sed -i "s#kafka.graphite.metrics.port=.*#kafka.graphite.metrics.port=$GRAPHITE_PORT#g" $CONFIG_FILE
+	sed -i "s#kafka.graphite.metrics.group=.*#kafka.graphite.metrics.group=$GRAPHITE_GROUP.$BROKER_ID#g" $CONFIG_FILE
+else
+	sed -i "s#kafka.graphite.metrics.reporter.enabled=.*#kafka.graphite.metrics.reporter.enabled=false#g" $CONFIG_FILE
+fi
+
+$KAFKA_HOME/bin/kafka-server-start.sh $CONFIG_FILE
