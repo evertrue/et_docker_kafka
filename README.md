@@ -1,7 +1,8 @@
 # et_docker_kafka
+
 Docker image for Kafka
 
-```
-docker build -t [registry/]et_kafka:latest .
-docker push [registry/]et_kafka
+```bash
+docker build -t [registry/]evertrue/kafka:x.y.z .
+docker push [registry/]evertrue/kafka:x.y.z
 ```
